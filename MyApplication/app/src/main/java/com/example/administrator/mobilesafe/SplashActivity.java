@@ -2,6 +2,7 @@ package com.example.administrator.mobilesafe;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -10,11 +11,8 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.os.SystemClock;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -28,9 +26,6 @@ import com.lidroid.xutils.http.callback.RequestCallBack;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.xutils.common.Callback;
-import org.xutils.http.RequestParams;
-import org.xutils.x;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,21 +52,27 @@ public class SplashActivity extends AppCompatActivity {
 
                 case MSG_CONNECTION_SUCCESS:
                     showVersionInfo(msg);
+                    break;
                 case MSG_CONNECTION_FAILURE:
                     enterHome();
+                    break;
                 case  MSG_URL_ERROR:
                     Toast.makeText(getApplicationContext(),"Server error",Toast.LENGTH_SHORT).show();
                     enterHome();
+                    break;
                 case MSG_IO_ERROR:
                     Toast.makeText(getApplicationContext(),"IO error",Toast.LENGTH_SHORT).show();
                     enterHome();
+                    break;
                 case MSG_JSON_ERROR:
                     Toast.makeText(getApplicationContext(),"Json error",Toast.LENGTH_SHORT).show();
                     enterHome();
+                    break;
             }
 
         }
     };
+    private SharedPreferences sp;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,7 +89,23 @@ public class SplashActivity extends AppCompatActivity {
         tv_splash_progress = (TextView) findViewById(R.id.tv_splash_progress);
 
         //
-        getVersion();
+        sp = getSharedPreferences("config",MODE_PRIVATE);
+        if (sp.getBoolean("update",true)) {
+
+            update();
+
+        } else {
+
+            new Thread(){
+                @Override
+                public void run() {
+
+                    SystemClock.sleep(2000);
+                    enterHome();
+                }
+            }.start();
+        }
+
 
         //
         startTimeMills = System.currentTimeMillis();
@@ -102,7 +119,7 @@ public class SplashActivity extends AppCompatActivity {
         PackageManager pm = getPackageManager();
         try {
             String name = getPackageName();
-            PackageInfo info = pm.getPackageInfo(getPackageName(), PackageManager.GET_ACTIVITIES);
+            PackageInfo info = pm.getPackageInfo(getPackageName(), 0);
             String versionname = info.versionName;
             return versionname;
         } catch (PackageManager.NameNotFoundException e) {
@@ -112,7 +129,7 @@ public class SplashActivity extends AppCompatActivity {
         return "";
     }
 
-    private void getVersion() {
+    private void update() {
 
         new Thread() {
 
@@ -263,7 +280,7 @@ public class SplashActivity extends AppCompatActivity {
     private void enterHome() {
 
         Intent intent = new Intent();
-        intent.setClass(this, MainActivity.class);
+        intent.setClass(this, HomeActivity.class);
         startActivity(intent);
         finish();
     }
